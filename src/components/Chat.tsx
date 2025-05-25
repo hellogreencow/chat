@@ -9,6 +9,7 @@ import { v4 as uuidv4 } from 'uuid';
 
 interface ChatProps {
   modelConfig: ModelConfig;
+  onImagesChange?: (hasImages: boolean) => void;
 }
 
 interface FileUpload {
@@ -27,9 +28,9 @@ interface Message {
   attachments?: FileUpload[];
 }
 
-const SYSTEM_PROMPT = `You are a Fire Safety AI Assistant, specializing in fire safety, prevention, and emergency procedures. Provide accurate, safety-focused advice based on established protocols. Always prioritize life safety over property protection. Be clear and direct, especially for emergency instructions. If information exists in the knowledge base, use it as your primary source.`;
+const SYSTEM_PROMPT = `You are a helpful AI assistant with advanced capabilities including image analysis, code generation, writing assistance, and general knowledge. Provide accurate, helpful responses to user queries. When analyzing images, be detailed and thorough in your observations. Always aim to be helpful, informative, and respectful.`;
 
-export default function Chat({ modelConfig }: ChatProps) {
+export default function Chat({ modelConfig, onImagesChange }: ChatProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -47,13 +48,19 @@ export default function Chat({ modelConfig }: ChatProps) {
       'Accept': 'application/json',
       'Content-Type': 'application/json'
     },
-    timeout: 10000, // Longer timeout for chat responses
+    timeout: 60000, // Increased timeout for chat responses (was 10000)
     withCredentials: false // This is important for CORS
   });
 
   useEffect(() => {
     initializeDatabase();
   }, []);
+
+  // Notify parent about image uploads
+  useEffect(() => {
+    const hasImages = uploads.some(upload => upload.type.startsWith('image/'));
+    onImagesChange?.(hasImages);
+  }, [uploads, onImagesChange]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -182,7 +189,7 @@ export default function Chat({ modelConfig }: ChatProps) {
         if (file.type.startsWith('image/')) {
           // Use the stored base64 data for images
           const base64Data = file.base64?.split(',')[1] || '';
-          return `[Image Analysis Request: ${file.name}]\nData: data:${file.type};base64,${base64Data}\n\nPlease analyze this image for fire safety concerns and provide detailed observations.`;
+          return `[Image Analysis Request: ${file.name}]\nData: data:${file.type};base64,${base64Data}\n\nPlease analyze this image and provide detailed observations about what you see.`;
         } else if (file.type.startsWith('text/')) {
           return `[Text File: ${file.name}]\nContent: ${file.url}\n`;
         } else {
@@ -195,13 +202,13 @@ export default function Chat({ modelConfig }: ChatProps) {
         relevantData.length > 0 ? `Based on our knowledge base:\n${relevantData.map(data => 
           `Q: ${data.question}\nA: ${data.answer}\n`).join('\n')}` : '',
         fileContents ? `Analyzing the following files:\n${fileContents}` : '',
-        input.trim() ? `Additional context or question from user: ${input.trim()}` : 'Please provide a detailed fire safety analysis of the uploaded files.'
+        input.trim() ? `User question: ${input.trim()}` : 'Please provide a detailed analysis of the uploaded files.'
       ].filter(Boolean).join('\n\n');
 
       // Always include system prompt in every message
       const messages = [{
         role: 'system',
-        content: SYSTEM_PROMPT + "\n\nWhen analyzing images:\n1. Carefully examine the entire image\n2. Identify potential fire hazards\n3. Note safety equipment presence or absence\n4. Suggest specific improvements\n5. Provide actionable recommendations\n\n"
+        content: SYSTEM_PROMPT + "\n\nWhen analyzing images:\n1. Carefully examine the entire image\n2. Describe what you see in detail\n3. Identify key objects, people, text, or elements\n4. Note colors, composition, and context\n5. Provide relevant insights or observations\n\n"
       }, {
         role: 'user',
         content: contextMessage
@@ -285,12 +292,12 @@ export default function Chat({ modelConfig }: ChatProps) {
         {messages.length === 0 && (
           <div className="flex flex-col items-center justify-center h-full text-white/70">
             <Bot className="w-16 h-16 mb-4" />
-            <p className="text-xl font-medium">Welcome to Fire Safety AI Assistant</p>
-            <p className="text-sm">Ask me anything about fire safety, prevention, or emergency procedures.</p>
-            <p className="text-sm mt-4">You can also drag and drop files (up to 500GB) for analysis.</p>
-            <div className="flex items-center gap-2 mt-4 text-sm text-primary-400">
+            <p className="text-xl font-medium">Welcome to AI Chat Assistant</p>
+            <p className="text-sm">Ask me anything! I can help with coding, writing, analysis, general questions, and more.</p>
+            <p className="text-sm mt-4">You can also drag and drop files (up to 500GB) for analysis, including images.</p>
+            <div className="flex items-center gap-2 mt-4 text-sm text-blue-400">
               <Database className="w-4 h-4" />
-              <span>Local knowledge base enabled</span>
+              <span>Enhanced AI capabilities enabled</span>
             </div>
           </div>
         )}
@@ -303,7 +310,7 @@ export default function Chat({ modelConfig }: ChatProps) {
               className={`
                 max-w-[80%] rounded-2xl px-4 py-2 
                 ${message.role === 'user' 
-                  ? 'bg-primary-500 text-white ml-4' 
+                  ? 'bg-blue-500 text-white ml-4' 
                   : 'bg-white/10 text-white/90 mr-4'
                 }
               `}
@@ -331,7 +338,7 @@ export default function Chat({ modelConfig }: ChatProps) {
                         </div>
                       ) : (
                         <div className="flex items-center gap-2 p-2 bg-black/20 rounded-lg">
-                          <FileText className="w-4 h-4 text-primary-400" />
+                          <FileText className="w-4 h-4 text-blue-400" />
                           <span className="text-sm truncate">{file.name}</span>
                         </div>
                       )}
@@ -354,7 +361,7 @@ export default function Chat({ modelConfig }: ChatProps) {
       </div>
 
       {isDragging && (
-        <div className="absolute inset-0 bg-primary-500/20 backdrop-blur-sm flex items-center justify-center">
+        <div className="absolute inset-0 bg-blue-500/20 backdrop-blur-sm flex items-center justify-center">
           <div className="bg-white/10 backdrop-blur-md p-8 rounded-2xl border-2 border-dashed border-white/40">
             <Upload className="w-12 h-12 text-white mb-4 mx-auto" />
             <p className="text-white text-lg font-medium">Drop your files here</p>
@@ -409,7 +416,7 @@ export default function Chat({ modelConfig }: ChatProps) {
                     </div>
                   ) : (
                     <>
-                      <FileText className="w-4 h-4 text-primary-400" />
+                      <FileText className="w-4 h-4 text-blue-400" />
                       <span className="max-w-[150px] truncate">{upload.name}</span>
                     </>
                   )}
@@ -445,7 +452,7 @@ export default function Chat({ modelConfig }: ChatProps) {
               className={`
                 absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-lg
                 ${(input.trim() || uploads.length > 0) && !isLoading
-                  ? 'text-primary-400 hover:text-primary-300 hover:bg-white/5'
+                  ? 'text-blue-400 hover:text-blue-300 hover:bg-white/5'
                   : 'text-white/20'
                 }
                 transition-colors

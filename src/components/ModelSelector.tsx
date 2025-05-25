@@ -22,7 +22,7 @@ export default function ModelSelector({ config, onConfigChange }: ModelSelectorP
       'Accept': 'application/json',
       'Content-Type': 'application/json'
     },
-    timeout: 2000,
+    timeout: 10000,
     withCredentials: false // This is important for CORS
   });
 

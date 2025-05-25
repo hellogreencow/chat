@@ -15,14 +15,14 @@ export default defineConfig({
     ]
   },
   server: {
-    port: 5555,
+    port: 5556,
     strictPort: false,
     host: '127.0.0.1',
     hmr: {
       overlay: true,
       protocol: 'ws',
       host: '127.0.0.1',
-      port: 5555
+      port: 5556
     },
     watch: {
       usePolling: false
@@ -32,7 +32,7 @@ export default defineConfig({
     }
   },
   preview: {
-    port: 5555,
+    port: 5556,
     strictPort: false
   },
   build: {
@@ -57,12 +57,6 @@ export default defineConfig({
   define: {
     'process.env.ELECTRON': JSON.stringify(process.env.ELECTRON),
     'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV || 'development'),
-    ...(process.env.ELECTRON !== 'true' && {
-      'process.platform': JSON.stringify(process.platform),
-      '__dirname': JSON.stringify(''),
-      // Prevent direct usage of require
-      'require': 'undefined',
-      'path.join': '(...args) => args.join("/")'
-    })
+    'global': 'globalThis'
   }
 });

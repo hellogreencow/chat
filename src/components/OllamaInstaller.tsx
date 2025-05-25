@@ -15,7 +15,7 @@ export default function OllamaInstaller({ onComplete }: OllamaInstallerProps) {
       'Accept': 'application/json',
       'Content-Type': 'application/json'
     },
-    timeout: 2000,
+    timeout: 10000,
     withCredentials: false
   });
 
